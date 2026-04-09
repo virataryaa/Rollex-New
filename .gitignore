@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+*.log
+*.xlsx
+*.csv
+*.tmp
+rollex_kc.csv
+rollex_temp.xlsx
+automation_log.txt
