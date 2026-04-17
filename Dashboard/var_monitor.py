@@ -157,6 +157,11 @@ min_d         = all_dates.min().date()
 max_d         = all_dates.max().date()
 default_start = (all_dates.max() - pd.DateOffset(years=5)).date()
 
+st.markdown(
+    f"<i style='font-size:.75rem;color:#888'>Data as of {max_d.strftime('%b %d, %Y')}</i>",
+    unsafe_allow_html=True,
+)
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # SECTION 1 — Collapsible Filters + Line Chart
 # ═══════════════════════════════════════════════════════════════════════════════
