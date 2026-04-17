@@ -4,21 +4,22 @@ Parametric 1-Day VaR at 99% confidence (rolling window: 20D / 60D / 120D)
 Run: streamlit run var_monitor.py
 """
 
-import sys
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 from pathlib import Path
 
-# ── Rollex utils (Master Database — single source of truth) ──────────────────
-_ROLLEX_DIR = Path(__file__).resolve().parents[1]
-_DB_DIR     = _ROLLEX_DIR / "Database"
-for _p in [_ROLLEX_DIR, Path(__file__).resolve().parent, Path.cwd(), Path.cwd().parent]:
-    if (_p / "rollex_utils.py").exists():
-        sys.path.insert(0, str(_p))
-        break
-from rollex_utils import load_rollex as _rx_load
+# ── Data paths ───────────────────────────────────────────────────────────────
+_DB_DIR = Path(__file__).resolve().parents[1] / "Database"
+
+def _rx_load(comm: str) -> pd.DataFrame:
+    """Read rollex parquet directly — no rollex_utils dependency."""
+    alias = {"LRC": "RC"}
+    c = alias.get(comm.upper(), comm.upper())
+    df = pd.read_parquet(_DB_DIR / f"rollex_{c}.parquet")
+    df.index.name = "Date"
+    return df
 
 # commodity code → parquet filename in repo Database/
 _PARQUET_MAP = {
