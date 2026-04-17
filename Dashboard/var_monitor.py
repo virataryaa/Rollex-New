@@ -14,7 +14,10 @@ from pathlib import Path
 # ── Rollex utils (Master Database — single source of truth) ──────────────────
 _ROLLEX_DIR = Path(__file__).resolve().parents[1]
 _DB_DIR     = _ROLLEX_DIR / "Database"
-sys.path.append(str(_ROLLEX_DIR))
+for _p in [_ROLLEX_DIR, Path(__file__).resolve().parent, Path.cwd(), Path.cwd().parent]:
+    if (_p / "rollex_utils.py").exists():
+        sys.path.insert(0, str(_p))
+        break
 from rollex_utils import load_rollex as _rx_load
 
 # commodity code → parquet filename in repo Database/
