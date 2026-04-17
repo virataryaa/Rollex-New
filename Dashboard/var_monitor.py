@@ -13,14 +13,14 @@ from pathlib import Path
 
 # ── Rollex utils (Master Database — single source of truth) ──────────────────
 _ROLLEX_DIR = Path(__file__).resolve().parents[1]
-_DB_DIR     = Path(__file__).resolve().parents[2]
+_DB_DIR     = _ROLLEX_DIR / "Database"
 sys.path.append(str(_ROLLEX_DIR))
 from rollex_utils import load_rollex as _rx_load
 
-# commodity code → parquet filename in Master Database
+# commodity code → parquet filename in repo Database/
 _PARQUET_MAP = {
-    "KC": "KC.parquet", "LRC": "RC.parquet", "CC": "CC.parquet",
-    "LCC": "LCC.parquet", "SB": "SB.parquet", "CT": "CT.parquet", "LSU": "LSU.parquet",
+    "KC": "master_KC.parquet", "LRC": "master_RC.parquet", "CC": "master_CC.parquet",
+    "LCC": "master_LCC.parquet", "SB": "master_SB.parquet", "CT": "master_CT.parquet", "LSU": "master_LSU.parquet",
 }
 
 def _load_front_price(comm: str) -> pd.Series:
