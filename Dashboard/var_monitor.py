@@ -23,10 +23,10 @@ _PARQUET_MAP = {
     "LCC": "master_LCC.parquet", "SB": "master_SB.parquet", "CT": "master_CT.parquet", "LSU": "master_LSU.parquet",
 }
 
-def _load_front_price(comm: str) -> pd.Series:
-    """Return a Date-indexed Series of the active front contract settlement price."""
+def _load_front_price(comm: str) -> pd.DataFrame:
+    """Return a Date-indexed DataFrame with settlement price and active contract name."""
     path = _DB_DIR / _PARQUET_MAP[comm]
-    raw  = pd.read_parquet(path, columns=["Date", "FND", "settlement"])
+    raw  = pd.read_parquet(path, columns=["Date", "FND", "settlement", "base_ric"])
     raw["Date"] = pd.to_datetime(raw["Date"])
     raw["FND"]  = pd.to_datetime(raw["FND"])
     raw = raw.dropna(subset=["settlement"])
@@ -34,10 +34,10 @@ def _load_front_price(comm: str) -> pd.Series:
     active = (
         raw[raw["FND"] >= raw["Date"]]
         .sort_values(["Date", "FND"])
-        .groupby("Date")["settlement"]
+        .groupby("Date")[["settlement", "base_ric"]]
         .first()
     )
-    return active  # DatetimeIndex → float
+    return active  # DatetimeIndex → {settlement, base_ric}
 
 st.set_page_config(page_title="VaR Monitor", layout="wide", initial_sidebar_state="collapsed")
 st.markdown("""<style>
@@ -104,12 +104,13 @@ def load_all():
             rx[f"vol_{w_name}"] = rx["log_ret"].rolling(w).std()
 
         # ── Price for VaR: active front contract settlement ───────────────────
-        front = _load_front_price(comm).rename("front_px")
+        front = _load_front_price(comm)
         df = rx.join(front, how="left")
-        df["front_px"] = df["front_px"].ffill()   # fill weekends/holidays
+        df["settlement"] = df["settlement"].ffill()
+        df["base_ric"]   = df["base_ric"].ffill()
 
         for w_name in WINDOWS:
-            df[f"VaR_{w_name}"] = df["front_px"] * LOT_SIZES[comm] * df[f"vol_{w_name}"] * CONF_Z
+            df[f"VaR_{w_name}"] = df["settlement"] * LOT_SIZES[comm] * df[f"vol_{w_name}"] * CONF_Z
 
         data[comm] = df.reset_index().rename(columns={"index": "Date"})
     return data
@@ -123,13 +124,17 @@ ALL_OPTIONS   = list(INDIV_OPTIONS.keys()) + list(COMBINED.keys())
 def _var_series(label: str, var_col: str) -> pd.DataFrame:
     if label in INDIV_OPTIONS:
         comm = INDIV_OPTIONS[label]
-        return data[comm][["Date", var_col]].copy().rename(columns={var_col: "VaR"})
+        return data[comm][["Date", var_col, "base_ric"]].copy().rename(columns={var_col: "VaR", "base_ric": "contract"})
     else:
         comms  = COMBINED[label]
         frames = [data[c].set_index("Date")[var_col] for c in comms]
         combined = pd.concat(frames, axis=1).ffill()
         s = combined.sum(axis=1, min_count=len(comms)).reset_index()
         s.columns = ["Date", "VaR"]
+        # For combined, show both active contracts e.g. "KCH6 + RCH6"
+        contracts = pd.concat([data[c].set_index("Date")["base_ric"] for c in comms], axis=1).ffill()
+        contracts.columns = comms
+        s["contract"] = contracts.apply(lambda r: " + ".join(r.dropna().values), axis=1)
         return s
 
 def _label_meta(label: str):
@@ -188,6 +193,8 @@ for label in selected_labels:
         x=s["Date"], y=s["VaR"].round(0),
         name=name, mode="lines",
         line=dict(color=color, width=1.8),
+        customdata=s["contract"],
+        hovertemplate="<b>%{x|%b %d, %Y}</b><br>VaR: $%{y:,.0f}<br>Contract: %{customdata}<extra>" + name + "</extra>",
     ))
 
 fig_line.update_layout(
