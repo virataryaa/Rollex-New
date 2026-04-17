@@ -206,7 +206,7 @@ fig_line.update_layout(
                 font=dict(size=8, color=BLACK), bgcolor="rgba(255,255,255,0.7)"),
     margin=dict(t=10, b=10, l=4, r=4), **_D,
 )
-st.plotly_chart(fig_line, use_container_width=True)
+st.plotly_chart(fig_line, width="100%")
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -254,7 +254,7 @@ fig_pct.update_layout(
     yaxis=dict(showgrid=False, tickfont=dict(size=9, color=BLACK)),
     margin=dict(t=10, b=10, l=4, r=120), **_D,
 )
-st.plotly_chart(fig_pct, use_container_width=True)
+st.plotly_chart(fig_pct, width="100%")
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -309,4 +309,4 @@ fig_hm.update_layout(
     yaxis=dict(tickfont=dict(size=9, color=BLACK), showgrid=False),
     margin=dict(t=40, b=10, l=60, r=10), **_D,
 )
-st.plotly_chart(fig_hm, use_container_width=True)
+st.plotly_chart(fig_hm, width="100%")
