@@ -290,7 +290,7 @@ pivot = pivot.sort_index(ascending=False)
 z         = pivot.values
 years     = [str(y) for y in pivot.index]
 months    = list(pivot.columns)
-text_vals = [[f"${v:,.0f}" if not np.isnan(v) else "" for v in row] for row in z]
+text_vals = [[f"${v:,.0f}" if not pd.isna(v) else "" for v in row] for row in z]
 
 fig_hm = go.Figure(go.Heatmap(
     z=z, x=months, y=years,
