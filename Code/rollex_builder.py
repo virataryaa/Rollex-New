@@ -269,6 +269,7 @@ for comm, cfg in COMMODITIES.items():
     df_out = pd.concat([df_out, tags], axis=1)
 
     # Save
+    df_out.index.name = "Date"
     df_out.to_parquet(out_path)
     results[comm] = df_out
     print(f"  Saved -> {out_path.name}  |  {len(df_out)} rows  |  "
@@ -309,3 +310,52 @@ if results:
         print("  GitHub push complete.")
     except Exception as e:
         print(f"  GitHub push failed: {e}")
+
+# ── SYNC ROLLEX TO COT REPO ───────────────────────────────────────────────────
+import shutil
+
+COT_DB   = Path(r"C:\Users\virat.arya\ETG\SoftsDatabase - Documents\Database\Hardmine\Non Fundamental\COT\Database")
+COT_REPO = COT_DB.parent
+
+# builder key → filename expected by COT repo (LRC alias)
+COT_SYNC = {
+    "KC":  "rollex_KC.parquet",
+    "RC":  "rollex_LRC.parquet",
+    "CC":  "rollex_CC.parquet",
+    "LCC": "rollex_LCC.parquet",
+    "SB":  "rollex_SB.parquet",
+    "CT":  "rollex_CT.parquet",
+}
+
+print(f"\n{'='*55}")
+print("  Syncing Rollex parquets -> COT repo...")
+print(f"{'='*55}")
+
+synced = []
+for bkey, cot_fname in COT_SYNC.items():
+    src = DB_DIR / f"rollex_{bkey}.parquet"
+    dst = COT_DB / cot_fname
+    if src.exists():
+        shutil.copy2(src, dst)
+        synced.append(cot_fname)
+        print(f"  {src.name} -> {cot_fname}")
+    else:
+        print(f"  WARN: {src.name} not found, skipping")
+
+if synced:
+    try:
+        def git_cot(cmd: list):
+            r = subprocess.run(["git", "-C", str(COT_REPO)] + cmd,
+                               capture_output=True, text=True)
+            if r.stdout.strip():
+                print(f"  {r.stdout.strip()}")
+            if r.returncode != 0 and r.stderr.strip():
+                print(f"  WARN: {r.stderr.strip()}")
+            return r.returncode
+
+        git_cot(["add", "Database/"])
+        git_cot(["commit", "-m", f"auto sync rollex {END_DATE}"])
+        git_cot(["push"])
+        print("  COT repo sync complete.")
+    except Exception as e:
+        print(f"  COT repo sync failed: {e}")
